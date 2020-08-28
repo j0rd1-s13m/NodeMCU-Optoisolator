@@ -18,12 +18,10 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
-
 int led = 12;
 
-// Lector Temp i Humitat
+// Temperature and Humidity sensor definition
 #define DHTTYPE DHT11
-
 int DHTPin = 4;
 DHT dht(DHTPin, DHTTYPE);
 
@@ -31,7 +29,6 @@ float Temperature;
 float Humidity;
 
 int electricSensor = 13;
-
 int timbre = 0;
 
 
@@ -52,10 +49,7 @@ void setup_wifi() {
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-
- 
-  
+  Serial.println(WiFi.localIP());  
 }
 
 void door_state(){  
@@ -71,19 +65,17 @@ void door_state(){
    
 }
 
-
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
-  
+  Serial.print("] ");  
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-
+  
   // Switch on the LED if an 1 was received as first character
- 
+  
   if ((char)payload[0] == '7') {
     delay(1000);
     Temperature = dht.readTemperature();         // Leemos la temperatura
@@ -105,7 +97,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     client.publish("house/0/menjador/hum", humF);       
   }
 }
-
 
 void reconnect() {
   // Loop until we're reconnected
@@ -129,7 +120,7 @@ void reconnect() {
 }
 
 void setup() {
-    
+  
   Serial.begin(9600);
   setup_wifi();  
   client.setServer(mqtt_server, 1883);
@@ -140,12 +131,9 @@ void setup() {
 }
 
 void loop() {
-
   if (!client.connected()) {
     reconnect();
   }
-  client.loop();
-  
+  client.loop();  
   long now = millis();
-
 }
