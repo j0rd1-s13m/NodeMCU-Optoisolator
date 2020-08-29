@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+//Declare WiFi parameters
 const char* ssid = "YYYYY";
 const char* password = "XXXXXX";
 const char* mqtt_server = "192.168.1.242";
@@ -24,10 +25,10 @@ int led = 12;
 #define DHTTYPE DHT11
 int DHTPin = 4;
 DHT dht(DHTPin, DHTTYPE);
-
 float Temperature;
 float Humidity;
 
+// Optoisolator declaration
 int electricSensor = 13;
 int timbre = 0;
 
