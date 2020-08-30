@@ -2,14 +2,17 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-//Declare WiFi parameters
-const char* ssid = "YYYYY";
-const char* password = "XXXXXX";
+// WiFi settings
+const char* ssid = "YourSSID";
+const char* password = "YourPassword";
+
+// MQTT configuration
 const char* mqtt_server = "192.168.1.242";
-const char* mqttUser = "ZZZZZZZ";
-const char* mqttPassword = "VVVVVVV";
+const char* mqttUser = "YourMQTTuser";
+const char* mqttPassword = "YourMQTTPassword";
 const int mqttPort = 1883;
 
+// Wifi network parameters
 IPAddress ip(192,168,1,248);     
 IPAddress gateway(192,168,1,1);   
 IPAddress subnet(255,255,255,0);   
@@ -19,29 +22,27 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
-int led = 12;
 
-// Temperature and Humidity sensor definition
+// DHT11 definition & configuration
 #define DHTTYPE DHT11
 int DHTPin = 4;
 DHT dht(DHTPin, DHTTYPE);
 float Temperature;
 float Humidity;
 
-// Optoisolator declaration
-int electricSensor = 13;
-int timbre = 0;
+// Optoisolator definition
+int optoisolator = 13;
+int bell = 0;
 
-
-void setup_wifi() {
+// Wifi setup
+void setup_wifi() 
+{
   delay(10);
-  // We start by connecting to a WiFi network
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.config(ip, gateway, subnet);
   WiFi.begin(ssid, password);
-  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -50,44 +51,50 @@ void setup_wifi() {
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());  
+  Serial.println(WiFi.localIP());
 }
 
-void door_state(){  
-  Serial.println("Interrupt");
-  
-  if(digitalRead(electricSensor)==HIGH){
-    timbre = 1;
-    client.publish("house/0/carrer/timbre", "NoTimbre");  
-  } else {
-    timbre = 0;
-    client.publish("house/0/carrer/timbre", "Timbre");  
-  } 
-   
+void door_state()
+{  
+  Serial.println("Interrupt");    
+  if(digitalRead(optoisolator)==HIGH)
+  {
+    bell = 1;
+    client.publish("house/0/street/bell", "NO");  
+  } else 
+  {
+    bell = 0;
+    client.publish("house/0/street/bell", "RINGING");  
+  }    
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+// Function to read MQTT Server msg
+void callback(char* topic, byte* payload, unsigned int length) 
+{
   Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");  
-  for (int i = 0; i < length; i++) {
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) 
+  {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-  
-  // Switch on the LED if an 1 was received as first character
-  
-  if ((char)payload[0] == '7') {
+
+  // Read temperature or humidity in case NodeMCU recives "7" or "8"
+  if ((char)payload[0] == '7') 
+  {
     delay(1000);
-    Temperature = dht.readTemperature();         // Leemos la temperatura
+    Temperature = dht.readTemperature();         
     delay(1000);
     Serial.println(Temperature);
     char TempF[4];
     dtostrf(Temperature, 4, 2, TempF); 
     delay(1000);           
-    client.publish("house/0/menjador/temp", TempF);           
+    client.publish("house/0/dinningroom/temp", TempF);           
   }  
-  if ((char)payload[0] == '8') {
+  
+  if ((char)payload[0] == '8') 
+  {
     delay(1000);
     Humidity = dht.readHumidity();     
     delay(1000);
@@ -95,10 +102,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     char humF[4];
     dtostrf(Humidity, 4, 2, humF);        
     delay(1000);           
-    client.publish("house/0/menjador/hum", humF);       
+    client.publish("house/0/dinningroom/hum", humF);       
   }
 }
 
+// Reconnect WiFi
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -120,18 +128,18 @@ void reconnect() {
   }
 }
 
-void setup() {
-  
+void setup() 
+{    
   Serial.begin(9600);
   setup_wifi();  
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);  
-  pinMode (electricSensor, INPUT);
-  attachInterrupt(electricSensor, door_state, CHANGE);   
-  
+  pinMode (optoisolator, INPUT);
+  attachInterrupt(optoisolator, door_state, CHANGE);
 }
 
-void loop() {
+void loop() 
+{
   if (!client.connected()) {
     reconnect();
   }
